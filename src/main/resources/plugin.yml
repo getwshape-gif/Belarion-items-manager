@@ -1,0 +1,20 @@
+name: BelarionItemsManager
+main: fr.belarion.belarionitems.BelarionItemsManager
+version: 1.0.0
+author: Belarion
+description: Gestionnaire de Custom Items compatible Minecraft 1.8, avec systeme de textures/resource pack automatique.
+
+commands:
+  belarionitems:
+    aliases: [bi]
+    description: Commande principale de Belarion Items Manager
+    usage: /<command> <give|list|reload|debug> [arguments]
+    permission: belarionitems.use
+
+permissions:
+  belarionitems.use:
+    description: Permet d'utiliser /bi
+    default: true
+  belarionitems.admin:
+    description: Permet give/reload
+    default: op
