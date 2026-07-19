@@ -16,7 +16,7 @@ depose le `.jar` compile dans l'onglet **Actions -> Artifacts** du repo.
 - `/bi give <joueur> <item>` — donner un Custom Item (permission `belarionitems.admin`)
 - `/bi list` — lister tous les items configures
 - `/bi reload` — recharger `items.yml` sans redemarrer le serveur
-- `/bi debug` — infos sur l'item tenu en main (material, durability-data, id, texture)
+- `/bi debug` — infos sur l'item tenu en main (material, tag NBT BelarionItemId, id, texture)
 
 ## Ajouter un nouvel item (aucun code requis)
 
@@ -27,35 +27,49 @@ items:
   emerald_hoe:
     material: DIAMOND_HOE
     texture: emerald_hoe
-    durability-data: 2003
     name: "&aHoue en Émeraude"
     lore:
       - "&7Outil custom"
 ```
 
 2. `/bi reload`
-3. Cree le fichier resource pack correspondant (voir section suivante).
+3. Cree le fichier resource pack correspondant (voir section suivante et le
+   dossier `resourcepack-templates/` qui contient des modeles prets a copier).
 
-**Important : plage de `durability-data`.** Le plugin Bela-Customs existant utilise deja
-les valeurs 1001 a 1020. Pour ce plugin, reserve **2001 et au-dessus** afin d'eviter tout
-conflit visuel entre les deux systemes sur un meme material vanilla.
+## Identification : tag NBT, pas de durability ni de CustomModelData
+
+Chaque item cree par le plugin recoit automatiquement un tag NBT `BelarionItemId`
+(ex: `BelarionItemId=emerald_hoe`, meme valeur que l'id dans `items.yml`). C'est
+**l'unique** moyen d'identification utilise par le plugin (`ItemRegistry.identify`) :
+il survit a la reparation a l'enclume, a l'enchantement, au renommage et au
+deplacement d'inventaire. Il n'y a **aucune durability truquee** et **aucun tag
+CustomModelData** — l'item garde sa durabilite vanilla reelle et son
+comportement d'usure normal.
 
 ## Correspondance avec le Resource Pack (IMPORTANT)
 
-Contrairement a Bela-Customs (dont la technique exacte cote resource pack n'est pas
-documentee ici), **Belarion Items Manager utilise directement la valeur brute de
-durability/Damage de l'ItemStack** (pas un tag NBT `CustomModelData` separe). Cote
-resource pack, avec OptiFine (technique CIT 1.8-compatible), il faut donc utiliser le
-predicat `damage=` et non `nbt.CustomModelData=`.
+**Belarion Items Manager est 100% compatible OptiFine CIT 1.8, sans CustomModelData.**
+OptiFine sait matcher un item sur n'importe quel tag NBT arbitraire via
+`nbt.<nom_du_tag>=<valeur>` (c'est le meme mecanisme que celui qu'OptiFine utilise
+en interne pour reconnaitre par exemple le type de potion via `nbt.Potion=...`).
+On l'utilise donc directement sur le tag pose par le plugin :
+
+```
+nbt.BelarionItemId=<id de l'item dans items.yml>
+```
+
+Les items vanilla n'ont pas ce tag : ils ne sont donc **jamais** affectes par ces
+regles CIT et gardent leurs textures d'origine sans modification.
 
 Pour chaque item de `items.yml`, cree dans le resource pack :
 
-**1) La texture** (icone inventaire/main/sol) :
+**1) La texture** (icone inventaire/main/sol — un seul fichier suffit, `type=item`
+s'applique automatiquement aux trois contextes) :
 ```
-assets/minecraft/textures/items/<texture>.png
+assets/minecraft/optifine/cit/<texture>.png
 ```
 
-**2) Le fichier CIT** (icone conditionnelle selon la durability-data) :
+**2) Le fichier CIT** :
 ```
 assets/minecraft/optifine/cit/items/<id>.properties
 ```
@@ -63,24 +77,34 @@ avec, pour l'exemple `emerald_hoe` ci-dessus :
 ```
 type=item
 items=diamond_hoe
-damage=2003
+nbt.BelarionItemId=emerald_hoe
 texture=emerald_hoe
 ```
-Et copier `emerald_hoe.png` directement dans `assets/minecraft/optifine/cit/` (a la
-racine de ce dossier, a cote du fichier `.properties`).
 
-**3) Pour une armure**, meme principe avec `type=armor` :
+**3) Pour une armure**, meme principe avec `type=armor` (necessaire pour l'affichage
+sur le corps du joueur) :
 ```
 type=armor
 items=diamond_helmet
-damage=2010
-texture.diamond_layer_2=mon_armure_layer_2
+nbt.BelarionItemId=emerald_helmet
+texture.diamond_layer_1=emerald_helmet_layer_1
+texture.diamond_layer_2=emerald_helmet_layer_2
 ```
-(voir la doc OptiFine CIT « Armor » pour le detail layer_1/layer_2 selon la piece).
+Ici les textures vont dans `assets/minecraft/textures/models/armor/` (dossier
+vanilla standard), pas dans `optifine/cit/`. Voir `resourcepack-templates/armor/`
+pour un modele complet a dupliquer par piece d'armure (helmet/chestplate/leggings/boots).
+
+**4) Modele 3D** : pour un outil/arme/armure qui garde la forme vanilla (cas normal),
+rien a faire — `type=item`/`type=armor` ne changent que la texture, le modele reste
+celui du material de base (ex: `item/handheld` pour un outil). Un vrai modele 3D
+personnalise (geometrie differente) necessiterait la propriete `model=` d'OptiFine
+CIT, hors perimetre ici.
 
 Cette approche ne modifie **jamais** les fichiers vanilla existants (`textures/items/diamond_*.png`,
-`textures/models/armor/diamond_layer_*.png`) : elle ajoute uniquement de nouveaux fichiers
-`.properties` + textures dedies, exactement comme le reste du Resource Pack Belarion.
+`textures/models/armor/diamond_layer_*.png`, modeles JSON vanilla) : elle ajoute
+uniquement de nouveaux fichiers `.properties` + textures dediees, exactement comme
+le reste du Resource Pack Belarion. Voir `resourcepack-templates/README.md` pour
+l'arborescence exacte et la marche a suivre a chaque nouvel item.
 
 ## Architecture
 
@@ -95,6 +119,12 @@ fr.belarion.belarionitems
 ├── api/BelarionItemsAPIImpl.java
 ├── commands/BelarionItemsCommand.java
 └── listeners/ItemIdentityListener.java   preservation d'identite (enclume/enchant)
+
+resourcepack-templates/    modeles OptiFine CIT prets a copier dans le Resource Pack
+├── README.md
+├── items/emerald_hammer.properties
+├── items/emerald_pickaxe.properties
+└── armor/exemple_armure.properties
 ```
 
 ## API pour les autres plugins (ex: Belarion-Enchants)
@@ -107,7 +137,7 @@ if (provider != null) {
     BelarionItemsAPI api = provider.getProvider();
     if (api.isCustomItem(itemStack)) {
         CustomItemDefinition def = api.getDefinition(itemStack);
-        // def.getId(), def.getMaterial(), def.getTexture(), def.getDurabilityData()...
+        // def.getId(), def.getMaterial(), def.getTexture(), def.getDisplayName()...
     }
 }
 ```
