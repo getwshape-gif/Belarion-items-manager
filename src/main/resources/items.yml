@@ -3,25 +3,27 @@
 #  Chaque entree = un Custom Item. Ajouter un item ici suffit,
 #  aucune modification de code Java n'est necessaire.
 #
-#  material         : Material Bukkit 1.8 utilise comme base
-#                      (voir https://helpch.at/docs/1.8/index.html?org/bukkit/Material.html)
-#  texture          : nom du fichier PNG (sans extension), doit exister dans
-#                      assets/minecraft/textures/items/<texture>.png du resource pack
-#  durability-data  : identifiant numerique unique (par material) utilise a la fois
-#                      comme Damage value de l'ItemStack et comme cle de correspondance
-#                      cote resource pack (predicate "damage" en OptiFine CIT).
-#                      Plage reservee pour ce plugin : 2001+
-#                      (1001-1020 sont deja utilises par le plugin Bela-Customs existant,
-#                      ne pas reutiliser ces valeurs pour eviter tout conflit visuel).
-#  name             : nom affiche (couleurs & supportees)
-#  lore             : description (liste de lignes, couleurs & supportees)
+#  material  : Material Bukkit 1.8 utilise comme base
+#              (voir https://helpch.at/docs/1.8/index.html?org/bukkit/Material.html)
+#  texture   : nom du fichier PNG (sans extension), doit exister dans
+#              assets/minecraft/textures/items/<texture>.png du resource pack
+#  name      : nom affiche (couleurs & supportees)
+#  lore      : description (liste de lignes, couleurs & supportees)
+#
+#  Identification : chaque item recoit automatiquement un tag NBT
+#  "BelarionItemId" = <id de cette section> (ex: "emerald_hammer"). C'est ce
+#  tag, et lui seul, qui identifie l'item de facon fiable (survit reparation
+#  a l'enclume, enchantement, renommage, deplacement d'inventaire). Cote
+#  resource pack, OptiFine CIT doit matcher sur ce tag avec
+#  "nbt.BelarionItemId=<id>" -- voir le README pour le detail et les modeles
+#  de fichiers .properties. Ne pas utiliser CustomModelData ni la durability
+#  comme identifiant.
 # =====================================================
 
 items:
   emerald_hammer:
     material: DIAMOND_AXE
     texture: emerald_hammer
-    durability-data: 2001
     name: "&aHammer en Émeraude"
     lore:
       - "&7Outil custom"
@@ -30,7 +32,6 @@ items:
   emerald_pickaxe:
     material: DIAMOND_PICKAXE
     texture: emerald_pickaxe
-    durability-data: 2002
     name: "&bPioche en Émeraude"
     lore:
       - "&7Outil custom"
