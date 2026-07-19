@@ -15,104 +15,79 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 
-/**
- * Charge, valide et expose le contenu de items.yml.
- * Ajouter un item = ajouter une entree dans items.yml + /bi reload. Aucun code Java requis.
- */
 public class ItemsConfig {
 
-    private final BelarionItemsManager plugin;
+private final BelarionItemsManager plugin;
     private final File file;
     private FileConfiguration config;
     private final Map<String, CustomItemDefinition> items = new LinkedHashMap<>();
 
-    public ItemsConfig(BelarionItemsManager plugin) {
-        this.plugin = plugin;
-        this.file = new File(plugin.getDataFolder(), "items.yml");
+public ItemsConfig(BelarionItemsManager plugin) {
+    this.plugin = plugin;
+    this.file = new File(plugin.getDataFolder(), "items.yml");
+}
+
+public void load() {
+    if (!file.exists()) {
+        plugin.saveResource("items.yml", false);
     }
 
-    public void load() {
-        if (!file.exists()) {
-            plugin.saveResource("items.yml", false);
+    config = YamlConfiguration.loadConfiguration(file);
+    items.clear();
+
+    ConfigurationSection section = config.getConfigurationSection("items");
+    if (section == null) {
+        plugin.getLogger().warning("Aucune section 'items' trouvee dans items.yml");
+        return;
+    }
+
+    for (String id : section.getKeys(false)) {
+        ConfigurationSection itemSection = section.getConfigurationSection(id);
+        if (itemSection == null) {
+            continue;
         }
 
-        config = YamlConfiguration.loadConfiguration(file);
-        items.clear();
-
-        ConfigurationSection section = config.getConfigurationSection("items");
-        if (section == null) {
-            plugin.getLogger().warning("Aucune section 'items' trouvee dans items.yml");
-            return;
+    try {
+        String materialName = itemSection.getString("material");
+        if (materialName == null) {
+            plugin.getLogger().warning("Item '" + id + "' ignore : 'material' manquant.");
+            continue;
         }
 
-        for (String id : section.getKeys(false)) {
-            ConfigurationSection itemSection = section.getConfigurationSection(id);
-            if (itemSection == null) {
-                continue;
-            }
-
-            try {
-                String materialName = itemSection.getString("material");
-                if (materialName == null) {
-                    plugin.getLogger().warning("Item '" + id + "' ignore : 'material' manquant.");
-                    continue;
-                }
-
-                Material material = Material.matchMaterial(materialName.toUpperCase());
-                if (material == null) {
-                    plugin.getLogger().warning("Item '" + id + "' ignore : material '" + materialName + "' invalide.");
-                    continue;
-                }
-
-                String texture = itemSection.getString("texture", id);
-                int durabilityData = itemSection.getInt("durability-data", -1);
-                if (durabilityData < 0) {
-                    plugin.getLogger().warning("Item '" + id + "' ignore : 'durability-data' manquant ou invalide.");
-                    continue;
-                }
-
-                String rawName = itemSection.getString("name", id);
-                String displayName = ChatColor.translateAlternateColorCodes('&', rawName);
-
-                List<String> rawLore = itemSection.getStringList("lore");
-                List<String> lore = new ArrayList<>();
-                for (String line : rawLore) {
-                    lore.add(ChatColor.translateAlternateColorCodes('&', line));
-                }
-
-                CustomItemDefinition definition = new CustomItemDefinition(
-                        id, material, texture, durabilityData, displayName, lore);
-
-                if (isDurabilityDataTaken(definition)) {
-                    plugin.getLogger().warning("Item '" + id + "' : durability-data " + durabilityData
-                            + " deja utilise par un autre item avec le meme material. "
-                            + "Conflit possible dans le resource pack.");
-                }
-
-                items.put(id.toLowerCase(), definition);
-            } catch (Exception ex) {
-                plugin.getLogger().log(Level.WARNING, "Erreur en chargeant l'item '" + id + "'", ex);
-            }
+        Material material = Material.matchMaterial(materialName.toUpperCase());
+        if (material == null) {
+            plugin.getLogger().warning("Item '" + id + "' ignore : material '" + materialName + "' invalide.");
+            continue;
         }
 
-        plugin.getLogger().info(items.size() + " Custom Item(s) charge(s) depuis items.yml");
-    }
+        String texture = itemSection.getString("texture", id);
 
-    private boolean isDurabilityDataTaken(CustomItemDefinition candidate) {
-        for (CustomItemDefinition existing : items.values()) {
-            if (existing.getMaterial() == candidate.getMaterial()
-                    && existing.getDurabilityData() == candidate.getDurabilityData()) {
-                return true;
-            }
+        String rawName = itemSection.getString("name", id);
+        String displayName = ChatColor.translateAlternateColorCodes('&', rawName);
+
+        List<String> rawLore = itemSection.getStringList("lore");
+        List<String> lore = new ArrayList<>();
+        for (String line : rawLore) {
+            lore.add(ChatColor.translateAlternateColorCodes('&', line));
         }
-        return false;
+
+        CustomItemDefinition definition = new CustomItemDefinition(
+            id, material, texture, displayName, lore);
+
+        items.put(id.toLowerCase(), definition);
+    } catch (Exception ex) {
+        plugin.getLogger().log(Level.WARNING, "Erreur en chargeant l'item '" + id + "'", ex);
+    }
     }
 
-    public void reload() {
-        load();
-    }
+    plugin.getLogger().info(items.size() + " Custom Item(s) charge(s) depuis items.yml");
+}
 
-    public Map<String, CustomItemDefinition> getItems() {
-        return items;
-    }
+public void reload() {
+    load();
+}
+
+public Map<String, CustomItemDefinition> getItems() {
+    return items;
+}
 }
